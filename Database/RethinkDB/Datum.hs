@@ -20,6 +20,7 @@ import qualified Data.Aeson as J
 import qualified Data.Aeson.Types as J
 import Data.Aeson.Types (Parser, Result(..), FromJSON(..), parse, ToJSON(..), Value)
 import Data.Aeson (fromJSON)
+import qualified Data.Aeson.KeyMap as KeyMap
 import qualified Data.ByteString as SB
 import qualified Data.ByteString.Lazy as LB
 import Data.Time
@@ -28,7 +29,6 @@ import qualified Data.Text as ST
 import qualified Data.Text.Lazy as LT
 import Data.Text.Encoding (encodeUtf8)
 import qualified Data.HashMap.Strict as HM
-import Data.Monoid
 import Data.List
 import Data.Vector (Vector)
 import qualified Data.Vector as V
@@ -328,24 +328,24 @@ instance ToDatum Float
 toJSONDatum :: ToJSON a => a -> Datum
 toJSONDatum a = case toJSON a of
   J.Object o ->
-    let asObject = Object $ HM.map toJSONDatum o
-        ptype = HM.lookup "$reql_type$" o
+    let asObject = Object $ KeyMap.toHashMapText $ KeyMap.map toJSONDatum o
+        ptype = KeyMap.lookup "$reql_type$" o
     in case ptype of
       Just "GEOMETRY" |
-        Just t <- HM.lookup "type" o,
-        Just c <- HM.lookup "coordinates" o ->
+        Just t <- KeyMap.lookup "type" o,
+        Just c <- KeyMap.lookup "coordinates" o ->
           case t of
             "Point" | Success [lon, lat] <- fromJSON c -> Point (LonLat lon lat)
             "LineString" | Success l <- V.mapM toLonLat =<< fromJSON c -> Line (GeoLine l)
             "Polygon" | Success p <- V.mapM (V.mapM toLonLat) =<< fromJSON c -> Polygon (GeoPolygon p)
             _ -> asObject
       Just "TIME" |
-        Just (J.Number ts) <- HM.lookup "epoch_time" o,
-        Just (J.String tz) <- HM.lookup "timezone" o,
+        Just (J.Number ts) <- KeyMap.lookup "epoch_time" o,
+        Just (J.String tz) <- KeyMap.lookup "timezone" o,
         Just tz' <- parseTimeZone (ST.unpack tz) ->
           Time $ utcToZonedTime tz' (posixSecondsToUTCTime . fromRational . toRational $ ts)
       Just "BINARY" |
-        Just (J.String b64) <- HM.lookup "data" o,
+        Just (J.String b64) <- KeyMap.lookup "data" o,
         Right dat <- Base64.decode (encodeUtf8 b64) ->
          Binary dat
       _ -> asObject
@@ -366,7 +366,7 @@ instance ToJSON Datum where
   toJSON (Number d) = J.Number $ realToFrac d
   toJSON (String t) = J.String t
   toJSON (Array v) = J.Array $ V.map toJSON v
-  toJSON (Object o) = J.Object $ HM.map toJSON o
+  toJSON (Object o) = J.Object $ KeyMap.fromHashMapText $ HM.map toJSON o
   toJSON (Time ts@(ZonedTime _ tz)) = J.object [
     "$reql_type$" J..= ("TIME" :: ST.Text),
     "epoch_time" J..= (realToFrac (utcTimeToPOSIXSeconds (zonedTimeToUTC ts)) :: Double),

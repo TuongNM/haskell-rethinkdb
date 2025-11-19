@@ -1,5 +1,4 @@
-resolver: nightly-2017-05-07
+resolver: lts-23.28
 packages:
 - '.'
-extra-deps:
-- aeson-1.2.0.0
+# extra-deps:

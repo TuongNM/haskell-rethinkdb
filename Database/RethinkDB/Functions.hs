@@ -16,7 +16,6 @@
 module Database.RethinkDB.Functions where
 
 import Data.Text (Text)
-import Control.Monad.State
 import Control.Applicative
 import Data.Maybe
 import Data.Default
@@ -28,7 +27,7 @@ import {-# SOURCE #-} Database.RethinkDB.MapReduce
 import Database.RethinkDB.Types
 import Database.RethinkDB.Datum hiding (Error)
 
-import Prelude (($), (.))
+import Prelude (($), (.), fmap)
 import qualified Prelude as P
 
 -- $setup

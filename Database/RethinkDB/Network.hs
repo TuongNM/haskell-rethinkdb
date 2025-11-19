@@ -27,12 +27,11 @@ module Database.RethinkDB.Network (
 
 import Control.Monad (when, forever, forM_)
 import Data.Typeable (Typeable)
-import Network (HostName)
 import Network.Socket (
   socket, Family(AF_INET, AF_INET6), SocketType(Stream), setSocketOption,
   SocketOption(NoDelay, KeepAlive), Socket, AddrInfo(AddrInfo, addrAddress, addrFamily))
 import qualified Network.Socket as Socket
-import Network.BSD (getProtocolNumber)
+import Network.BSD (HostName, getProtocolNumber)
 import Network.Socket.ByteString.Lazy (sendAll)
 import Network.Socket.ByteString (recv)
 import Data.ByteString.Lazy (ByteString)

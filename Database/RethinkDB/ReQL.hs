@@ -44,11 +44,7 @@ module Database.RethinkDB.ReQL (
   ) where
 
 import qualified Data.Aeson as J
-#if MIN_VERSION_aeson(1,0,0)
 import qualified Data.Aeson.Text as J
-#else
-import qualified Data.Aeson.Encode as J
-#endif
 import qualified Data.Text.Lazy as LT
 import qualified Data.Text.Lazy.Builder as LT
 import Data.Aeson (Value)
@@ -185,9 +181,11 @@ varName n = replicate (q+1) (chr $ ord 'a' + r)
 -- | A list of terms
 data ArgList = ArgList { baseArray :: State QuerySettings [Term] }
 
+instance Semigroup ArgList where
+  (ArgList a) <> (ArgList b) = ArgList $ (++) <$> a <*> b
+
 instance Monoid ArgList where
   mempty = ArgList $ return []
-  mappend (ArgList a) (ArgList b) = ArgList $ (++) <$> a <*> b
 
 -- | Build arrays of exprs
 class Arr a where
