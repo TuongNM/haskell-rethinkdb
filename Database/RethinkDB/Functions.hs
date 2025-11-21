@@ -34,6 +34,7 @@ import qualified Prelude as P
 --
 -- Get the doctests ready
 --
+-- >>> :set -w
 -- >>> :load Database.RethinkDB.Doctest
 -- >>> import qualified Database.RethinkDB as R
 -- >>> :set -XOverloadedStrings
@@ -270,7 +271,7 @@ union a b = op UNION (a, b)
 
 -- | Map a function over a sequence
 --
--- >>> run h $ R.map (!"a") [["a" := 1], ["a" := 2]]
+-- >>> run h $ R.map (! "a") [["a" := 1], ["a" := 2]]
 -- [1,2]
 map :: (Expr a, Expr b) => (ReQL -> b) -> a -> ReQL
 map f a = op MAP (a, expr P.. f)
@@ -404,7 +405,7 @@ desc f = op DESC [f]
 
 -- | Turn a grouping function and a reduction function into a grouped map reduce operation
 --
--- >>> run' h $ table "posts" # orderBy [asc "id"] # group (!"author") (reduce (\a b -> a + "\n" + b) . R.map (!"message"))
+-- >>> run' h $ table "posts" # orderBy [asc "id"] # group (! "author") (reduce (\a b -> a + "\n" + b) . R.map (! "message"))
 -- [{"group":"bill","reduction":"hi\nhello"},{"group":"bob","reduction":"lorem ipsum"}]
 -- >>> run' h $ table "users" # group ((!0) . splitOn "" . (!"name")) (\users -> let pc = users!"post_count" in [avg pc, R.sum pc])
 -- [{"group":"b","reduction":[2,2]},{"group":"n","reduction":[0,0]}]
@@ -597,11 +598,11 @@ dbList = op DB_LIST ()
 
 -- | Create an index on the table from the given function
 --
--- >>> run' h $ table "users" # indexCreate "occupation" (!"occupation")
+-- >>> run' h $ table "users" # indexCreate "occupation" (! "occupation")
 -- {"created":1}
--- >>> run' h $ table "users" # ex indexCreate ["multi":=True] "friends" (!"friends")
+-- >>> run' h $ table "users" # ex indexCreate ["multi":=True] "friends" (! "friends")
 -- {"created":1}
--- >>> run' h $ table "users" # ex indexCreate ["geo":=True] "location" (!"location")
+-- >>> run' h $ table "users" # ex indexCreate ["geo":=True] "location" (! "location")
 -- {"created":1}
 indexCreate :: (Expr fun) => Text -> fun -> Table -> ReQL
 indexCreate name f tbl = op INDEX_CREATE (tbl, expr name, f)

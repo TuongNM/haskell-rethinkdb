@@ -40,7 +40,7 @@ import Database.RethinkDB.Network
 import Database.RethinkDB.ReQL
 
 -- $setup
--- >>> :set -XOverloadedStrings
+-- >>> :set -XOverloadedStrings -w
 -- >>> :load Database.RethinkDB.NoClash
 -- >>> import qualified Database.RethinkDB as R
 -- >>> import Control.Exception
@@ -107,7 +107,7 @@ runOpts h opts t = do
 -- > >>> run h $ str "foo" :: IO Int
 -- *** Exception: RethinkDB: Unexpected response: "expected Int, encountered String"
 --
--- >>> c <- run h $ table "users" # orderBy [asc "name"] # (!"name"):: IO (Cursor Datum)
+-- >>> c <- run h $ table "users" # orderBy [asc "name"] # (! "name"):: IO (Cursor Datum)
 -- >>> next c
 -- Just "bill"
 -- >>> collect c

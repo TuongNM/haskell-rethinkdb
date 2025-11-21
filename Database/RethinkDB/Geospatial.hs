@@ -10,7 +10,7 @@ import Database.RethinkDB.Wire.Term
 --
 -- Get the doctests ready
 --
--- >>> :set -XOverloadedStrings
+-- >>> :set -XOverloadedStrings -w
 -- >>> :load Database.RethinkDB.NoClash
 -- >>> import qualified Database.RethinkDB as R
 -- >>> import Control.Exception
@@ -21,8 +21,8 @@ import Database.RethinkDB.Wire.Term
 -- >>> try' $ run' h $ table "places" # insert ["location" := point (-120) 60]
 -- >>> try' $ run' h $ table "places" # insert ["location" := point (-122) 43]
 -- >>> try' $ run' h $ table "places" # insert ["location" := point (-91) 44, "area" := polygon [[-124,30],[-113,54],[-80,44]]]
--- >>> try' $ run' h $ table "places" # ex indexCreate ["geo":=True] "location" (!"location")
--- >>> try' $ run' h $ table "places" # ex indexCreate ["geo":=True] "geo" (!"area")
+-- >>> try' $ run' h $ table "places" # ex indexCreate ["geo":=True] "location" (! "location")
+-- >>> try' $ run' h $ table "places" # ex indexCreate ["geo":=True] "geo" (! "area")
 
 -- | Convert a line object into a polygon
 --

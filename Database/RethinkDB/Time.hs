@@ -6,7 +6,7 @@ import Database.RethinkDB.Wire.Term
 import Database.RethinkDB.ReQL
 
 -- $setup
--- >>> :set -XOverloadedStrings
+-- >>> :set -XOverloadedStrings -w
 -- >>> :load Database.RethinkDB.NoClash
 -- >>> import qualified Database.RethinkDB as R
 -- >>> import Database.RethinkDB.NoClash
