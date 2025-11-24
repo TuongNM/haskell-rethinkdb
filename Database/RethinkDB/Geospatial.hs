@@ -11,11 +11,10 @@ import Database.RethinkDB.Wire.Term
 -- Get the doctests ready
 --
 -- >>> :set -XOverloadedStrings -w
--- >>> :load Database.RethinkDB.NoClash
+-- >>> :load Database.RethinkDB.Doctest
 -- >>> import qualified Database.RethinkDB as R
 -- >>> import Control.Exception
--- >>> let try' x = (try x `asTypeOf` return (Left (undefined :: SomeException))) >> return ()
--- >>> h <- fmap (use "doctests") $ connect "localhost" 28015 def
+-- >>> h <- doctestConnect
 -- >>> try' $ run' h $ dbCreate "doctests"
 -- >>> try' $ run' h $ tableCreate "places"
 -- >>> try' $ run' h $ table "places" # insert ["location" := point (-120) 60]
@@ -42,7 +41,7 @@ geoJSON g = op GEOJSON [g]
 
 -- | Convert a RethinkDB geometry object into a GeoJSON object
 --
--- >>> run' h $ toGeoJSON $ point (-122.423246) 37.779388
+-- >>> sorted $ run' h $ toGeoJSON $ point (-122.423246) 37.779388
 -- {"coordinates":[-122.423246,37.779388],"type":"Point"}
 toGeoJSON :: Expr geo => geo -> ReQL
 toGeoJSON g = op TO_GEOJSON [g]

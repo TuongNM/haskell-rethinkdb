@@ -13,7 +13,7 @@ module Database.RethinkDB.Datum (
   (.=), (.:), (.:?),
   encode, decode, eitherDecode,
   resultToMaybe, resultToEither,
-  object
+  object, showArray, showObject,
   ) where
 
 import qualified Data.Aeson as J
@@ -216,13 +216,19 @@ instance Show Datum where
   show (Bool False) = "false"
   show (Number d) = showDouble d
   show (String t) = show t
-  show (Array v) = "[" ++ intercalate "," (map show $ V.toList v) ++ "]"
-  show (Object o) = "{" ++ intercalate "," (map (\(k,v) -> show k ++ ":" ++ show v) $ HM.toList o) ++ "}"
+  show (Array v) = showArray show v
+  show (Object o) = showObject show id o
   show (Time t) = "Time<" ++ show t ++ ">"
   show (Point p) = "Point<" ++ showLonLat p ++ ">"
   show (Line l) = "Line<[" ++ intercalate "],[" (map showLonLat $ V.toList $ geoLinePoints l) ++ "]>"
   show (Polygon p) = "Polygon<[" ++ intercalate "],[" (map (\x -> "[" ++ intercalate "],[" (map showLonLat $ V.toList x) ++ "]") (V.toList $ geoPolygonLines p)) ++ "]>"
   show (Binary b) = "Binary<" ++ show b ++ ">"
+
+showArray :: (Datum -> String) -> Array -> String
+showArray showDatum v = "[" ++ intercalate "," (map showDatum $ V.toList v) ++ "]"
+
+showObject :: (Datum -> String) -> ([(ST.Text, Datum)] -> [(ST.Text, Datum)]) -> Object -> String
+showObject showDatum f o = "{" ++ intercalate "," (map (\(k,v) -> show k ++ ":" ++ showDatum v) $ f $ HM.toList o) ++ "}"
 
 showLonLat :: LonLat -> String
 showLonLat (LonLat a b) = showDouble a ++ "," ++ showDouble b

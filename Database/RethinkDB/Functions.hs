@@ -125,8 +125,8 @@ table n = Table Nothing n Nothing
 
 -- | Drop a table
 --
--- >>> run' h $ tableDrop (table "foo")
--- {"config_changes":[{"new_val":null,"old_val":{"primary_key":"id","write_acks":"majority","durability":"hard","name":"foo","shards":...,"id":...,"db":"doctests"}}],"tables_dropped":1}
+-- >>> sorted $ run' h $ tableDrop (table "foo")
+-- {"config_changes":[{"new_val":null,"old_val":{"db":"doctests","durability":"hard","id":...,"name":"foo","primary_key":"id","shards":...,"write_acks":"majority"...],"tables_dropped":1}
 tableDrop :: Table -> ReQL
 tableDrop (Table mdb table_name _) =
   withQuerySettings $ \QuerySettings{ queryDefaultDatabase = ddb } ->
@@ -310,21 +310,21 @@ concatMap f e = op CONCAT_MAP (e, expr P.. f)
 -- | SQL-like inner join of two sequences
 --
 -- >>> sorted $ run' h $ innerJoin (\user post -> user!"name" R.== post!"author") (table "users") (table "posts") # R.zip # orderBy [asc "id"] # pluck ["name", "message"]
--- [{"name":"bill","message":"hello"},{"name":"bill","message":"hi"}]
+-- [{"message":"hello","name":"bill"},{"message":"hi","name":"bill"}]
 innerJoin :: (Expr a, Expr b, Expr c) => (ReQL -> ReQL -> c) -> a -> b -> ReQL
 innerJoin f a b = op INNER_JOIN (a, b, fmap expr P.. f)
 
 -- | SQL-like outer join of two sequences
 --
 -- >>> sorted $ run' h $ outerJoin (\user post -> user!"name" R.== post!"author") (table "users") (table "posts") # R.zip # orderBy [asc "id", asc "name"] # pluck ["name", "message"]
--- [{"name":"bill","message":"hello"},{"name":"bill","message":"hi"},{"name":"nancy"}]
+-- [{"message":"hello","name":"bill"},{"message":"hi","name":"bill"},{"name":"nancy"}]
 outerJoin :: (Expr a, Expr b, Expr c) => (ReQL -> ReQL -> c) -> a -> b -> ReQL
 outerJoin f a b = op OUTER_JOIN (a, b, fmap expr P.. f)
 
 -- | An efficient inner_join that uses a key for the left table and an index for the right table.
 --
 -- >>> sorted $ run' h $ table "posts" # eqJoin "author" (table "users") "name" # R.zip # orderBy [asc "id"] # pluck ["name", "message"]
--- [{"name":"bill","message":"hello"},{"name":"bill","message":"hi"}]
+-- [{"message":"hello","name":"bill"},{"message":"hi","name":"bill"}]
 eqJoin :: (Expr fun, Expr right, Expr left) => fun -> right -> Index -> left -> ReQL
 eqJoin key right (Index idx) left = op' EQ_JOIN (left, key, right) ["index" := idx]
 eqJoin key right PrimaryKey left = op EQ_JOIN (left, key, right)
@@ -380,8 +380,8 @@ distinct s = op DISTINCT [s]
 
 -- | Merge the "left" and "right" attributes of the objects in a sequence.
 --
--- >>> fmap sort $ run h $ table "posts" # eqJoin "author" (table "users") "name" # R.zip :: IO [Datum]
--- [{"post_count":2,"flag":"deleted","name":"bill","author":"bill","id":2,"message":"hello"},{"post_count":2,"name":"bill","author":"bill","id":1,"message":"hi"}]
+-- >>> fmap sorted (run h $ table "posts" # eqJoin "author" (table "users") "name" # R.zip :: IO [Datum])
+-- [{"author":"bill","flag":"deleted","id":2,"message":"hello","name":"bill","post_count":2},{"author":"bill","id":1,"message":"hi","name":"bill","post_count":2}]
 zip :: (Expr a) => a -> ReQL
 zip a = op ZIP [a]
 
@@ -405,9 +405,9 @@ desc f = op DESC [f]
 
 -- | Turn a grouping function and a reduction function into a grouped map reduce operation
 --
--- >>> run' h $ table "posts" # orderBy [asc "id"] # group (! "author") (reduce (\a b -> a + "\n" + b) . R.map (! "message"))
+-- >>> sorted $ run' h $ table "posts" # orderBy [asc "id"] # group (! "author") (reduce (\a b -> a + "\n" + b) . R.map (! "message"))
 -- [{"group":"bill","reduction":"hi\nhello"},{"group":"bob","reduction":"lorem ipsum"}]
--- >>> run' h $ table "users" # group ((!0) . splitOn "" . (!"name")) (\users -> let pc = users!"post_count" in [avg pc, R.sum pc])
+-- >>> sorted $ run' h $ table "users" # group ((! 0) . splitOn "" . (! "name")) (\users -> let pc = users!"post_count" in [avg pc, R.sum pc])
 -- [{"group":"b","reduction":[2,2]},{"group":"n","reduction":[0,0]}]
 group ::
   (Expr group, Expr reduction, Expr seq)
@@ -525,7 +525,7 @@ contains x s = op CONTAINS (s, x)
 -- NOTE: This driver is based on the official JavaScript driver, you are correct to expect the same semantics.
 -- However the order of composition is flipped by putting the first argument last.
 --
--- >>> run' h $ merge ["a" := 1, "b" := 1] ["b" := 1, "c" := 2]
+-- >>> sorted $ run' h $ merge ["a" := 1, "b" := 1] ["b" := 1, "c" := 2]
 -- {"a":1,"b":1,"c":2}
 merge :: (Expr a, Expr b) => a -> b -> ReQL
 merge a b = op MERGE (b, a)
@@ -571,22 +571,22 @@ error m = op ERROR [m]
 
 -- | Create a Database reference
 --
--- >>> run' h $ db "test" # info
--- {"name":"test","id":...,"type":"DB"}
+-- >>> sorted $ run' h $ db "test" # info
+-- {"id":...,"name":"test","type":"DB"}
 db :: Text -> Database
 db = Database
 
 -- | Create a database on the server
 --
--- >>> run' h $ dbCreate "dev"
--- {"config_changes":[{"new_val":{"name":"dev","id":...},"old_val":null}],"dbs_created":1}
+-- >>> sorted $ run' h $ dbCreate "dev"
+-- {"config_changes":[{"new_val":{"id":...,"name":"dev"},"old_val":null}],"dbs_created":1}
 dbCreate :: Text -> ReQL
 dbCreate db_name = op DB_CREATE [expr db_name]
 
 -- | Drop a database
 --
--- >>> run' h $ dbDrop (db "dev")
--- {"config_changes":[{"new_val":null,"old_val":{"name":"dev","id":...}}],"tables_dropped":0,"dbs_dropped":1}
+-- >>> sorted $ run' h $ dbDrop (db "dev")
+-- {"config_changes":[{"new_val":null,"old_val":{"id":...,"name":"dev"}}],"dbs_dropped":1,"tables_dropped":0}
 dbDrop :: Database -> ReQL
 dbDrop (Database name) = op DB_DROP [name]
 
@@ -691,7 +691,7 @@ asNumber = coerceTo "NUMBER"
 
 -- | Convert a value to an object
 --
--- >>> run' h $ asObject $ [(str "a",1),("b",2)]
+-- >>> sorted $ run' h $ asObject $ [(str "a",1),("b",2)]
 -- {"a":1,"b":2}
 asObject :: Expr x => x -> ReQL
 asObject = coerceTo "OBJECT"
@@ -820,8 +820,8 @@ values o = op VALUES [o]
 
 -- | Match a string to a regular expression.
 --
--- >>> run' h $ str "foobar" # match "f(.)+[bc](.+)"
--- {"groups":[{"start":2,"end":3,"str":"o"},{"start":4,"end":6,"str":"ar"}],"start":0,"end":6,"str":"foobar"}
+-- >>> sorted $ run' h $ str "foobar" # match "f(.)+[bc](.+)"
+-- {"end":6,"groups":[{"end":3,"start":2,"str":"o"},{"end":6,"start":4,"str":"ar"}],"start":0,"str":"foobar"}
 match :: (Expr string) => ReQL -> string -> ReQL
 match r s = op MATCH (s, r)
 
@@ -854,8 +854,8 @@ typeOf a = op TYPE_OF [a]
 
 -- | Get information on a given expression. Useful for tables and databases.
 --
--- >>> run h $ info $ table "users"
--- {"primary_key":"name","doc_count_estimates":...,"name":"users","id":...,"indexes":["friends","location"],"type":"TABLE","db":{"name":"doctests","id":...,"type":"DB"}}
+-- >>> sorted $ run h $ info $ table "users"
+-- {"db":{"id":...,"name":"doctests","type":"DB"},"doc_count_estimates":...,"id":...,"indexes":["friends","location"],"name":"users","primary_key":"name","type":"TABLE"}
 info :: Expr a => a -> ReQL
 info a = op INFO [a]
 
@@ -986,8 +986,8 @@ instance Default HttpOptions where
 
 -- | Retrieve data from the specified URL over HTTP
 --
--- >>> _ <- run' h $ http "http://httpbin.org/get" def{ httpParams = Just ["foo" := 1] }
--- >>> _ <- run' h $ http "http://httpbin.org/put" def{ httpMethod = Just PUT, httpData = Just $ expr ["foo" := "bar"] }
+-- > run' h $ http "http://httpbin.org/get" def{ httpParams = Just ["foo" := 1] }
+-- > run' h $ http "http://httpbin.org/put" def{ httpMethod = Just PUT, httpData = Just $ expr ["foo" := "bar"] }
 http :: Expr url => url -> HttpOptions -> ReQL
 http url opts = op' HTTP [url] $ render opts
   where
@@ -1019,7 +1019,7 @@ args a = op ARGS [a]
 -- >>> cursor <- run h $ table "posts" # changes :: IO (Cursor Datum)
 -- >>> run h $ table "posts" # insert ["author" := "bill", "message" := "bye", "id" := 4] :: IO WriteResponse
 -- {inserted:1}
--- >>> next cursor
+-- >>> fmap sorted $ next cursor
 -- Just {"new_val":{"author":"bill","id":4,"message":"bye"},"old_val":null}
 changes :: Expr seq => seq -> ReQL
 changes s = op CHANGES [s]
@@ -1130,8 +1130,8 @@ zipWithN f s = op MAP $ arr s <> arr [f]
 
 -- | Change a table's configuration
 --
--- >>> run h $ table "users" # reconfigure 2 1
--- {"config_changes":[{"new_val":{"primary_key":"name","write_acks":"majority","durability":"hard","name":"users","shards":...
+-- >>> sorted $ run h $ table "users" # reconfigure 2 1
+-- {"config_changes":[{"new_val":{"db":"doctests","durability":"hard",...,"name":"users","primary_key":"name","shards":...,"write_acks":"majority"...},...
 reconfigure :: (Expr table, Expr replicas)
             => ReQL -> replicas -> table -> ReQL
 reconfigure shards replicas t = op' RECONFIGURE [t] ["shards" := shards, "replicas" := replicas]
@@ -1139,20 +1139,20 @@ reconfigure shards replicas t = op' RECONFIGURE [t] ["shards" := shards, "replic
 -- | Rebalance a table's shards
 --
 -- >>> run h $ table "users" # rebalance
--- {"rebalanced":1,"status_changes":[{"new_val":{"status":{"all_replicas_ready":...,"ready_for_outdated_reads":...
+-- {"rebalanced":1,"status_changes":[{"old_val":...,"new_val":{"id":...,"status":{"all_replicas_ready":...,"ready_for_outdated_reads":...
 rebalance :: Expr table => table -> ReQL
 rebalance t = op REBALANCE [t]
 
 -- | Get the config for a table or database
 --
--- >>> run h $ table "users" # config
--- {"primary_key":"name","write_acks":"majority","durability":"hard","name":"users","shards":...,"id":...,"db":"doctests"}
+-- >>> sorted $ run h $ table "users" # config
+-- {"db":"doctests","durability":"hard","id":...,"name":"users","primary_key":"name","shards":...,"write_acks":"majority"...
 config :: Expr table => table -> ReQL
 config t = op CONFIG [t]
 
 -- | Get the status of a table
 --
--- >>> run h $ table "users" # status
--- {"status":{"all_replicas_ready":true,"ready_for_outdated_reads":true,...
+-- >>> sorted $ run h $ table "users" # status
+-- {"db":"doctests",...,"status":{"all_replicas_ready":true,"ready_for_outdated_reads":true,...
 status :: Expr table => table -> ReQL
 status t = op STATUS [t]
