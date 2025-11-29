@@ -403,11 +403,11 @@ parseTimeZone tz = minutesToTimeZone <$> case tz of
   ('+':tz') -> go tz'
   _ -> go tz
   where
-    go tz' =
-        let (h, _:m) = break (==':') tz' in
+    go tz' | (h, _:m) <- break (==':') tz' =
         case (reads h, reads m) of
             ([(hh, "")], [(mm, "")]) -> Just $ hh * 60 + mm
             _ -> Nothing
+    go _ = Nothing
 
 -- ReQL datums are compared alphabetically by type name. Objects are
 -- compared field by field in alphabetical order.

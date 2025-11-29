@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings, FlexibleInstances, DefaultSignatures, GADTs, CPP #-}
+{-# LANGUAGE OverloadedStrings, FlexibleInstances, DefaultSignatures, GADTs, CPP, TypeOperators #-}
 
 module Database.RethinkDB.Driver (
   run,

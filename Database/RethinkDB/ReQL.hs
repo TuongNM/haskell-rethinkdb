@@ -1,7 +1,8 @@
 {-# LANGUAGE ExistentialQuantification, RecordWildCards,
              ScopedTypeVariables, FlexibleInstances,
              OverloadedStrings, PatternGuards, GADTs,
-             EmptyDataDecls, DefaultSignatures, CPP #-}
+             EmptyDataDecls, DefaultSignatures, CPP,
+             TypeOperators #-}
 
 #if __GLASGOW_HASKELL__ < 710
 {-# LANGUAGE OverlappingInstances #-}
