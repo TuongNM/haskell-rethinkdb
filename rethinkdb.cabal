@@ -1,8 +1,8 @@
+cabal-version: 2.2
 name: rethinkdb
 version: 2.2.0.10
-cabal-version: 2.0
 build-type: Custom
-license: Apache
+license: Apache-2.0
 license-file: LICENSE
 maintainer: Etienne Laurin <etienne@atnnn.com>
 homepage: http://github.com/atnnn/haskell-rethinkdb
@@ -32,7 +32,11 @@ flag dev
     default: False
     manual: True
 
+common common
+    default-language: Haskell2010
+
 library
+    import: common
     build-depends:
         base >=4 && <4.20,
         unordered-containers ==0.2.*,
@@ -86,6 +90,7 @@ library
         ghc-options: -Wall
 
 test-suite doctests
+    import: common
     build-depends:
         base,
         doctest >=0.9,
@@ -97,6 +102,7 @@ test-suite doctests
     ghc-options: -threaded
 
 benchmark bench
+    import: common
     build-depends:
         base,
         criterion,
@@ -111,6 +117,7 @@ benchmark bench
     ghc-prof-options: "-with-rtsopts=-p -s -h -i0.1 -N"
 
 executable proto2hs
+  import: common
   if !flag(dev)
     buildable: False
   main-is: proto2hs.hs
